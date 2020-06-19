@@ -4,37 +4,27 @@ import (
 	"fmt"
 )
 
-// type FrequencyEnum int
-// const (
-// 	Daily FrequencyEnum = iota
-// 	Weekly
-// 	Monthly
-// 	Yearly
-// )
-
 type Cloud struct {
-	Name 	string `json:"name"`
-	Token 	string `json:"token"`
+	Name 	string	`json:"name"`
+	Token 	string	`json:"token"`
 }
 
 type User struct {
-	ID				string		`json:"id"`
-	Username		string		`json:"username"`
-	Password		string		`json:"password"`
-	Frequency		string		`json:"frequency"`
-	ToodledoToken	string		`json:"toodledo-token"`
-	ToBackup		[]string	`json:"to-backup"`
-	Clouds			[]Cloud		`json:"clouds"`
+	Username		string
+	Password		string
+	Frequency		string
+	ToodledoToken	string
+	ToBackup		[]string
+	Clouds			[]Cloud
 }
 
-func NewUser(name string, pass string, toodledoToken string, toBackup []string) *User {
+func New(name string, pass string) *User {
 	u := User{
-		ID: "boop",
 		Username: name,
 		Password: pass,
-		Frequency: "daily",
-		ToodledoToken: toodledoToken,
-		ToBackup: toBackup,
+		Frequency: "",
+		ToodledoToken: "",
+		ToBackup: []string{},
 		Clouds: []Cloud{},
 	}
 	return &u
