@@ -10,31 +10,31 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Client *mongo.Client
-
 var ErrNotConnectedToMongoDB = errors.New("Error: Not connected to MongoDB")
 
-func ConnectToMongoDB() {
+func ConnectToMongoDB() *mongo.Client {
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	Client, err := mongo.Connect(context.Background(), clientOptions)
+	client, err := mongo.Connect(context.Background(), clientOptions)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = Client.Ping(context.TODO(), nil)
+	err = client.Ping(context.TODO(), nil)
 
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	return client
 }
 
-func GetCollection(db, c string) (*mongo.Collection, error) {
+func GetCollection(client *mongo.Client, db, c string) (*mongo.Collection, error) {
 
-	if Client == nil {
+	if client == nil {
 		return nil, ErrNotConnectedToMongoDB
 	}
 
-	collection := Client.Database(db).Collection(c)
+	collection := client.Database(db).Collection(c)
 	return collection, nil
 }

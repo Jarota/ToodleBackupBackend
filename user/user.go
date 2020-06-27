@@ -4,6 +4,11 @@ import (
 	"fmt"
 )
 
+type ToodleInfo struct {
+	Token 		string		`json:"token"`
+	ToBackup	[]string 	`json:"toBackup"`
+}
+
 type Cloud struct {
 	Name 	string	`json:"name"`
 	Token 	string	`json:"token"`
@@ -13,8 +18,7 @@ type User struct {
 	Username		string
 	Password		string
 	Frequency		string
-	ToodledoToken	string
-	ToBackup		[]string
+	Toodledo 		ToodleInfo
 	Clouds			[]Cloud
 }
 
@@ -23,8 +27,7 @@ func New(name string, pass string) *User {
 		Username: name,
 		Password: pass,
 		Frequency: "",
-		ToodledoToken: "",
-		ToBackup: []string{},
+		Toodledo: ToodleInfo{},
 		Clouds: []Cloud{},
 	}
 	return &u
@@ -33,7 +36,7 @@ func New(name string, pass string) *User {
 func (u *User) Print() {
 	fmt.Println()
 	fmt.Println(u.Username)
-	fmt.Println(u.ToBackup)
+	fmt.Println(u.Toodledo)
 	fmt.Println(u.Frequency)
 	fmt.Println()
 }
