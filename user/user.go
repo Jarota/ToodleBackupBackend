@@ -15,11 +15,11 @@ type Cloud struct {
 }
 
 type User struct {
-	Username		string
-	Password		string
-	Frequency		string
-	Toodledo 		ToodleInfo
-	Clouds			[]Cloud
+	Username		string 		`json:"username"`
+	Password		string 		`json:"password"`
+	Frequency		string		`json:"frequency"`
+	Toodledo 		ToodleInfo	`json:"toodledo"`
+	Clouds			[]Cloud		`json:"clouds"`
 }
 
 func New(name string, pass string) *User {
