@@ -25,16 +25,18 @@ type credentials struct {
 }
 
 const (
-	DB    string = "ToodleBackup"
-	USERS string = "Users"
+	dbName string = "ToodleBackup"
+	users  string = "Users"
 )
 
 var client = db.ConnectToMongoDB()
 
+// HelloWorld handler for basic testing
 func HelloWorld(c *fiber.Ctx) {
 	c.Send("Hello, World!\n")
 }
 
+// Register handler for registering new users
 func Register(c *fiber.Ctx) {
 
 	var creds credentials
@@ -45,7 +47,7 @@ func Register(c *fiber.Ctx) {
 		return
 	}
 
-	userCollection, err := db.GetCollection(client, DB, USERS)
+	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
@@ -53,7 +55,7 @@ func Register(c *fiber.Ctx) {
 	}
 
 	// Make sure there are no existing users with creds.username
-	filter := bson.D{{"username", creds.Username}}
+	filter := bson.D{{Key: "username", Value: creds.Username}}
 
 	var possibleUser user.User
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&possibleUser)
@@ -98,6 +100,7 @@ func Register(c *fiber.Ctx) {
 
 }
 
+// Login handler for logging in an existing user and returning a JWT
 func Login(c *fiber.Ctx) {
 
 	var creds credentials
@@ -108,7 +111,7 @@ func Login(c *fiber.Ctx) {
 		return
 	}
 
-	userCollection, err := db.GetCollection(client, DB, USERS)
+	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
@@ -116,7 +119,7 @@ func Login(c *fiber.Ctx) {
 	}
 
 	// Check the user exists
-	filter := bson.D{{"username", creds.Username}}
+	filter := bson.D{{Key: "username", Value: creds.Username}}
 
 	var u user.User
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&u)
@@ -154,6 +157,7 @@ func Login(c *fiber.Ctx) {
 
 }
 
+// Logout handler, currently a placeholder
 func Logout(c *fiber.Ctx) {
 	c.Send("Logout a user\n")
 	/*
@@ -165,18 +169,19 @@ func Logout(c *fiber.Ctx) {
 	// TODO
 }
 
+// GetUser handler for returning the logged in user's info
 func GetUser(c *fiber.Ctx) {
 
 	name := getAuthenticatedUsername(c)
 
-	userCollection, err := db.GetCollection(client, DB, USERS)
+	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
 	}
 
-	filter := bson.D{{"username", name}}
+	filter := bson.D{{Key: "username", Value: name}}
 	var u user.User
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&u)
 
@@ -197,12 +202,13 @@ func GetUser(c *fiber.Ctx) {
 
 }
 
+// ConnToodledo handler for putting access token in the db
 func ConnToodledo(c *fiber.Ctx) {
 
 	var toodleInfo user.ToodleInfo
 	json.Unmarshal([]byte(c.Body()), &toodleInfo)
 
-	userCollection, err := db.GetCollection(client, DB, USERS)
+	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
@@ -210,10 +216,10 @@ func ConnToodledo(c *fiber.Ctx) {
 	}
 
 	name := getAuthenticatedUsername(c)
-	filter := bson.D{{"username", name}}
+	filter := bson.D{{Key: "username", Value: name}}
 	update := bson.D{
-		{"$set", bson.D{
-			{"toodledo", toodleInfo},
+		{Key: "$set", Value: bson.D{
+			{Key: "toodledo", Value: toodleInfo},
 		}},
 	}
 
@@ -228,12 +234,13 @@ func ConnToodledo(c *fiber.Ctx) {
 
 }
 
+// ConnCloudStorage handler for putting access token in the db
 func ConnCloudStorage(c *fiber.Ctx) {
 
 	var cloud user.Cloud
 	json.Unmarshal([]byte(c.Body()), &cloud)
 
-	userCollection, err := db.GetCollection(client, DB, USERS)
+	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
@@ -241,10 +248,10 @@ func ConnCloudStorage(c *fiber.Ctx) {
 	}
 
 	name := getAuthenticatedUsername(c)
-	filter := bson.D{{"username", name}}
+	filter := bson.D{{Key: "username", Value: name}}
 	update := bson.D{
-		{"$push", bson.D{
-			{"clouds", cloud},
+		{Key: "$push", Value: bson.D{
+			{Key: "clouds", Value: cloud},
 		}},
 	}
 
@@ -259,12 +266,13 @@ func ConnCloudStorage(c *fiber.Ctx) {
 
 }
 
+// SetBackupFrequency handler for setting/updating user's frequency in the db
 func SetBackupFrequency(c *fiber.Ctx) {
 
 	var freq string
 	json.Unmarshal([]byte(c.Body()), &freq)
 
-	userCollection, err := db.GetCollection(client, DB, USERS)
+	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
@@ -272,10 +280,10 @@ func SetBackupFrequency(c *fiber.Ctx) {
 	}
 
 	name := getAuthenticatedUsername(c)
-	filter := bson.D{{"username", name}}
+	filter := bson.D{{Key: "username", Value: name}}
 	update := bson.D{
-		{"$set", bson.D{
-			{"frequency", freq},
+		{Key: "$set", Value: bson.D{
+			{Key: "frequency", Value: freq},
 		}},
 	}
 
