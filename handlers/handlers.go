@@ -35,7 +35,6 @@ func HelloWorld(c *fiber.Ctx) {
 	c.Send("Hello, World!\n")
 }
 
-// Should be passed a credentials object in the request body
 func Register(c *fiber.Ctx) {
 
 	var creds credentials
@@ -79,7 +78,23 @@ func Register(c *fiber.Ctx) {
 		return
 	}
 
-	c.SendStatus(201) // User successfully registered
+	// Create token
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	// Set claims
+	claims := token.Claims.(jwt.MapClaims)
+	claims["name"] = u.Username
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+
+	// Generate encoded token and send it as response
+	t, err := token.SignedString([]byte(os.Getenv("SECRET")))
+
+	if err != nil {
+		c.SendStatus(fiber.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(fiber.Map{"token": t})
 
 }
 
@@ -107,7 +122,6 @@ func Login(c *fiber.Ctx) {
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&u)
 
 	if err != nil {
-		log.Fatal(err)
 		c.SendStatus(fiber.StatusUnauthorized)
 		return
 	}
@@ -149,6 +163,38 @@ func Logout(c *fiber.Ctx) {
 	*/
 
 	// TODO
+}
+
+func GetUser(c *fiber.Ctx) {
+
+	name := getAuthenticatedUsername(c)
+
+	userCollection, err := db.GetCollection(client, DB, USERS)
+
+	if err != nil {
+		c.SendStatus(fiber.StatusInternalServerError)
+		return
+	}
+
+	filter := bson.D{{"username", name}}
+	var u user.User
+	err = userCollection.FindOne(context.TODO(), filter).Decode(&u)
+
+	if err != nil {
+		c.SendStatus(fiber.StatusInternalServerError)
+		log.Printf("Error finding user in database")
+		return
+	}
+
+	b, err := json.Marshal(u)
+
+	if err != nil {
+		c.SendStatus(fiber.StatusInternalServerError)
+		return
+	}
+
+	c.Send(b)
+
 }
 
 func ConnToodledo(c *fiber.Ctx) {

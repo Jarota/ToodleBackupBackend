@@ -1,13 +1,12 @@
 package main
 
 import (
-	// "context"
 	"fmt"
-	// "log"
 	"os"
 
+	"github.com/gofiber/cors"
 	"github.com/gofiber/fiber"
-	"github.com/gofiber/jwt"
+	jwtware "github.com/gofiber/jwt"
 
 	// "github.com/jarota/toodle-backup/db"
 	"github.com/jarota/ToodleBackupBackend/handlers"
@@ -16,9 +15,11 @@ import (
 func main() {
 	fmt.Println("Starting Toodle Backup Backend...")
 
-	fmt.Println("Connected to MongoDB")
-
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		ExposeHeaders: []string{"Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With"},
+	}))
 
 	app.Get("/", handlers.HelloWorld)
 	app.Post("/register", handlers.Register)
@@ -29,6 +30,7 @@ func main() {
 		ContextKey: "userInfo",
 	}))
 
+	app.Get("/getUser", handlers.GetUser)
 	app.Post("/logout", handlers.Logout)
 	app.Put("/connToodledo", handlers.ConnToodledo)
 	app.Put("/connCloudStorage", handlers.ConnCloudStorage)
