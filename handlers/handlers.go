@@ -14,18 +14,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/jarota/toodle-backup/auth"
-	"github.com/jarota/toodle-backup/user"
-	"github.com/jarota/toodle-backup/db"
+	"github.com/jarota/ToodleBackupBackend/auth"
+	"github.com/jarota/ToodleBackupBackend/db"
+	"github.com/jarota/ToodleBackupBackend/user"
 )
 
 type credentials struct {
-	Username	string 	`json:"username"`
-	Password	string 	`json:"password"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 const (
-	DB string = "ToodleBackup"
+	DB    string = "ToodleBackup"
 	USERS string = "Users"
 )
 
@@ -37,7 +37,7 @@ func HelloWorld(c *fiber.Ctx) {
 
 // Should be passed a credentials object in the request body
 func Register(c *fiber.Ctx) {
-	
+
 	var creds credentials
 	err := json.Unmarshal([]byte(c.Body()), &creds)
 
@@ -52,25 +52,25 @@ func Register(c *fiber.Ctx) {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
 	}
-	
+
 	// Make sure there are no existing users with creds.username
 	filter := bson.D{{"username", creds.Username}}
 
 	var possibleUser user.User
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&possibleUser)
-	
+
 	if err != mongo.ErrNoDocuments {
 		c.Status(409).Send("Username taken")
 		return
-	} 
-	
+	}
+
 	// Otherwise store new user in DB
 	hash, err := auth.HashPassword(creds.Password)
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
 	}
-		
+
 	u := user.New(creds.Username, hash)
 
 	_, err = userCollection.InsertOne(context.TODO(), u)
@@ -80,12 +80,11 @@ func Register(c *fiber.Ctx) {
 	}
 
 	c.SendStatus(201) // User successfully registered
-	
+
 }
 
-
 func Login(c *fiber.Ctx) {
-	
+
 	var creds credentials
 	err := json.Unmarshal([]byte(c.Body()), &creds)
 
@@ -100,7 +99,7 @@ func Login(c *fiber.Ctx) {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
 	}
-	
+
 	// Check the user exists
 	filter := bson.D{{"username", creds.Username}}
 
@@ -148,7 +147,7 @@ func Logout(c *fiber.Ctx) {
 		of a logout solution, a 'Blacklist' of tokens must be
 		kept track of
 	*/
-	
+
 	// TODO
 }
 
@@ -163,7 +162,7 @@ func ConnToodledo(c *fiber.Ctx) {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
 	}
-	
+
 	name := getAuthenticatedUsername(c)
 	filter := bson.D{{"username", name}}
 	update := bson.D{
@@ -180,16 +179,16 @@ func ConnToodledo(c *fiber.Ctx) {
 	}
 
 	c.SendStatus(201)
-	
+
 }
 
 func ConnCloudStorage(c *fiber.Ctx) {
-	
+
 	var cloud user.Cloud
 	json.Unmarshal([]byte(c.Body()), &cloud)
 
 	userCollection, err := db.GetCollection(client, DB, USERS)
-	
+
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
@@ -220,7 +219,7 @@ func SetBackupFrequency(c *fiber.Ctx) {
 	json.Unmarshal([]byte(c.Body()), &freq)
 
 	userCollection, err := db.GetCollection(client, DB, USERS)
-	
+
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
@@ -244,8 +243,8 @@ func SetBackupFrequency(c *fiber.Ctx) {
 	c.SendStatus(201) // Backup frequency successfully set
 }
 
-func getAuthenticatedUsername(c *fiber.Ctx) string{
-	
+func getAuthenticatedUsername(c *fiber.Ctx) string {
+
 	userInfo := c.Locals("userInfo").(*jwt.Token)
 	claims := userInfo.Claims.(jwt.MapClaims)
 	name := claims["name"].(string)

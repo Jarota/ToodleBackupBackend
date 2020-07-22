@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/jwt"
 
 	// "github.com/jarota/toodle-backup/db"
-	"github.com/jarota/toodle-backup/handlers"
+	"github.com/jarota/ToodleBackupBackend/handlers"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 	fmt.Println("Connected to MongoDB")
 
 	app := fiber.New()
-	
+
 	app.Get("/", handlers.HelloWorld)
 	app.Post("/register", handlers.Register)
 	app.Post("/login", handlers.Login)
