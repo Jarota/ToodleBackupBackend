@@ -342,7 +342,7 @@ func RandomString(c *fiber.Ctx) {
 		APIKey:     apiKey,
 		N:          1,
 		Length:     10,
-		Characters: "qwertyuiopasdfghjklzxcvbnm",
+		Characters: "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM",
 	}
 
 	body := &randomBody{
@@ -376,7 +376,8 @@ func RandomString(c *fiber.Ctx) {
 	var randResp randomResponse
 	json.Unmarshal(bytes, &randResp)
 
-	c.Send(randResp.Result.Random.Data[0])
+	state := randResp.Result.Random.Data[0]
+	c.JSON(fiber.Map{"state": state})
 
 }
 
