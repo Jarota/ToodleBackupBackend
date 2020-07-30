@@ -36,6 +36,8 @@ func main() {
 	app.Put("/connCloudStorage", handlers.ConnCloudStorage)
 	app.Put("/setBackupFrequency", handlers.SetBackupFrequency)
 
+	app.Get("/randomString", handlers.RandomString)
+
 	app.Listen(3000)
 
 	// err := db.Client.Disconnect(context.TODO())
