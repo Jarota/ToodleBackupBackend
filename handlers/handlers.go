@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -19,6 +16,8 @@ import (
 
 	"github.com/jarota/ToodleBackupBackend/auth"
 	"github.com/jarota/ToodleBackupBackend/db"
+	"github.com/jarota/ToodleBackupBackend/random"
+	"github.com/jarota/ToodleBackupBackend/toodledo"
 	"github.com/jarota/ToodleBackupBackend/user"
 )
 
@@ -208,8 +207,15 @@ func GetUser(c *fiber.Ctx) {
 // ConnToodledo handler for putting access token in the db
 func ConnToodledo(c *fiber.Ctx) {
 
-	var toodleInfo user.ToodleInfo
-	json.Unmarshal([]byte(c.Body()), &toodleInfo)
+	var code string
+	json.Unmarshal([]byte(c.Body()), &code)
+
+	toodleInfo, err := toodledo.GetToodledoTokens(code)
+
+	if err != nil {
+		c.SendStatus(fiber.StatusInternalServerError)
+		return
+	}
 
 	userCollection, err := db.GetCollection(client, dbName, users)
 
@@ -222,7 +228,7 @@ func ConnToodledo(c *fiber.Ctx) {
 	filter := bson.D{{Key: "username", Value: name}}
 	update := bson.D{
 		{Key: "$set", Value: bson.D{
-			{Key: "toodledo", Value: toodleInfo},
+			{Key: "toodledo", Value: *toodleInfo},
 		}},
 	}
 
@@ -300,84 +306,17 @@ func SetBackupFrequency(c *fiber.Ctx) {
 	c.SendStatus(201) // Backup frequency successfully set
 }
 
-type randomParams struct {
-	APIKey     string `json:"apiKey"`
-	N          int    `json:"n"`
-	Length     int    `json:"length"`
-	Characters string `json:"characters"`
-}
-
-type randomBody struct {
-	JSONrpc string       `json:"jsonrpc"`
-	Method  string       `json:"method"`
-	Params  randomParams `json:"params"`
-	ID      int          `json:"id"`
-}
-
-type randomData struct {
-	Data           []string `json:"data"`
-	CompletionTime string   `json:"completionTime"`
-}
-
-type generateStringsResult struct {
-	Random        randomData `json:"random"`
-	BitsUsed      int        `json:"bitsUsed"`
-	BitsLeft      int        `json:"bitsLeft"`
-	RequestsLeft  int        `json:"requestsLeft"`
-	AdvisoryDelay int        `json:"advisoryDelay"`
-}
-
-type randomResponse struct {
-	JSONrpc string                `json:"jsonrpc"`
-	Result  generateStringsResult `json:"result"`
-	ID      int                   `json:"id"`
-}
-
 // RandomString gets a string from random.org for state paramter in toodledo api redirect url
 func RandomString(c *fiber.Ctx) {
 
-	apiKey := os.Getenv("RANDOMAPI")
-
-	params := &randomParams{
-		APIKey:     apiKey,
-		N:          1,
-		Length:     10,
-		Characters: "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM",
-	}
-
-	body := &randomBody{
-		JSONrpc: "2.0",
-		Method:  "generateStrings",
-		Params:  *params,
-		ID:      42,
-	}
-
-	buf := new(bytes.Buffer)
-	json.NewEncoder(buf).Encode(body)
-
-	contentType := "application/json"
-	url := "https://api.random.org/json-rpc/2/invoke"
-	resp, err := http.Post(url, contentType, buf)
+	rand, err := random.GetRandomString()
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
 		return
 	}
 
-	defer resp.Body.Close()
-
-	bytes, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		c.SendStatus(fiber.StatusInternalServerError)
-		return
-	}
-
-	var randResp randomResponse
-	json.Unmarshal(bytes, &randResp)
-
-	state := randResp.Result.Random.Data[0]
-	c.JSON(fiber.Map{"state": state})
+	c.JSON(fiber.Map{"state": rand})
 
 }
 
