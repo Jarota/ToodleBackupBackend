@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gofiber/cors"
-	"github.com/gofiber/fiber"
-	jwtware "github.com/gofiber/jwt"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	jwtware "github.com/gofiber/jwt/v2"
 
-	// "github.com/jarota/toodle-backup/db"
 	"github.com/jarota/ToodleBackupBackend/handlers"
 )
 
@@ -18,7 +17,7 @@ func main() {
 	app := fiber.New()
 
 	app.Use(cors.New(cors.Config{
-		ExposeHeaders: []string{"Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With"},
+		ExposeHeaders: "Access-Control-Allow-Headers, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With",
 	}))
 
 	app.Get("/", handlers.HelloWorld)
@@ -38,7 +37,7 @@ func main() {
 
 	app.Get("/randomString", handlers.RandomString)
 
-	app.Listen(3000)
+	app.Listen(":3000")
 
 	// err := db.Client.Disconnect(context.TODO())
 
@@ -46,5 +45,6 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	// fmt.Println("Disconnected from MongoDB")
+	fmt.Println("Fin")
 
 }

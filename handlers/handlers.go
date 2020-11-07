@@ -9,7 +9,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,26 +34,27 @@ const (
 var client = db.ConnectToMongoDB()
 
 // HelloWorld handler for basic testing
-func HelloWorld(c *fiber.Ctx) {
-	c.Send("Hello, World!\n")
+func HelloWorld(c *fiber.Ctx) error {
+	c.Send([]byte("Hello, World!\n"))
+	return nil
 }
 
 // Register handler for registering new users
-func Register(c *fiber.Ctx) {
+func Register(c *fiber.Ctx) error {
 
 	var creds credentials
 	err := json.Unmarshal([]byte(c.Body()), &creds)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	// Make sure there are no existing users with creds.username
@@ -63,15 +64,15 @@ func Register(c *fiber.Ctx) {
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&possibleUser)
 
 	if err != mongo.ErrNoDocuments {
-		c.Status(409).Send("Username taken")
-		return
+		c.Status(409).Send([]byte("Username taken"))
+		return err
 	}
 
 	// Otherwise store new user in DB
 	hash, err := auth.HashPassword(creds.Password)
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	u := user.New(creds.Username, hash)
@@ -79,7 +80,7 @@ func Register(c *fiber.Ctx) {
 	_, err = userCollection.InsertOne(context.TODO(), u)
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	// Create token
@@ -95,29 +96,29 @@ func Register(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	c.JSON(fiber.Map{"token": t})
-
+	return nil
 }
 
 // Login handler for logging in an existing user and returning a JWT
-func Login(c *fiber.Ctx) {
+func Login(c *fiber.Ctx) error {
 
 	var creds credentials
 	err := json.Unmarshal([]byte(c.Body()), &creds)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	// Check the user exists
@@ -128,7 +129,7 @@ func Login(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusUnauthorized)
-		return
+		return err
 	}
 
 	// Check the passwords match
@@ -136,7 +137,7 @@ func Login(c *fiber.Ctx) {
 
 	if err != nil || match == false {
 		c.SendStatus(fiber.StatusUnauthorized)
-		return
+		return err
 	}
 
 	// Create token
@@ -152,16 +153,16 @@ func Login(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	c.JSON(fiber.Map{"token": t})
-
+	return nil
 }
 
 // Logout handler, currently a placeholder
-func Logout(c *fiber.Ctx) {
-	c.Send("Logout a user\n")
+func Logout(c *fiber.Ctx) error {
+	c.Send([]byte("Logout a user\n"))
 	/*
 		JWT will expire after one day, if this is not enough
 		of a logout solution, a 'Blacklist' of tokens must be
@@ -169,10 +170,11 @@ func Logout(c *fiber.Ctx) {
 	*/
 
 	// TODO
+	return nil
 }
 
 // GetUser handler for returning the logged in user's info
-func GetUser(c *fiber.Ctx) {
+func GetUser(c *fiber.Ctx) error {
 
 	name := getAuthenticatedUsername(c)
 
@@ -180,7 +182,7 @@ func GetUser(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	filter := bson.D{{Key: "username", Value: name}}
@@ -190,22 +192,22 @@ func GetUser(c *fiber.Ctx) {
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
 		log.Printf("Error finding user in database")
-		return
+		return err
 	}
 
 	b, err := json.Marshal(u)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	c.Send(b)
-
+	return nil
 }
 
 // ConnToodledo handler for putting access token in the db
-func ConnToodledo(c *fiber.Ctx) {
+func ConnToodledo(c *fiber.Ctx) error {
 
 	var code string
 	json.Unmarshal([]byte(c.Body()), &code)
@@ -214,14 +216,14 @@ func ConnToodledo(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	name := getAuthenticatedUsername(c)
@@ -236,15 +238,15 @@ func ConnToodledo(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	c.SendStatus(201)
-
+	return nil
 }
 
 // ConnCloudStorage handler for putting access token in the db
-func ConnCloudStorage(c *fiber.Ctx) {
+func ConnCloudStorage(c *fiber.Ctx) error {
 
 	var cloud user.Cloud
 	json.Unmarshal([]byte(c.Body()), &cloud)
@@ -253,7 +255,7 @@ func ConnCloudStorage(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	name := getAuthenticatedUsername(c)
@@ -268,15 +270,15 @@ func ConnCloudStorage(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	c.SendStatus(201) // Cloud service successfully added
-
+	return nil
 }
 
 // SetBackupFrequency handler for setting/updating user's frequency in the db
-func SetBackupFrequency(c *fiber.Ctx) {
+func SetBackupFrequency(c *fiber.Ctx) error {
 
 	var freq string
 	json.Unmarshal([]byte(c.Body()), &freq)
@@ -285,7 +287,7 @@ func SetBackupFrequency(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	name := getAuthenticatedUsername(c)
@@ -300,24 +302,25 @@ func SetBackupFrequency(c *fiber.Ctx) {
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	c.SendStatus(201) // Backup frequency successfully set
+	return nil
 }
 
 // RandomString gets a string from random.org for state paramter in toodledo api redirect url
-func RandomString(c *fiber.Ctx) {
+func RandomString(c *fiber.Ctx) error {
 
 	rand, err := random.GetRandomString()
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
-		return
+		return err
 	}
 
 	c.JSON(fiber.Map{"state": rand})
-
+	return nil
 }
 
 func getAuthenticatedUsername(c *fiber.Ctx) string {
