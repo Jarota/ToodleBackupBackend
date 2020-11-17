@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,7 +14,14 @@ import (
 var ErrNotConnectedToMongoDB = errors.New("Error: Not connected to MongoDB")
 
 func ConnectToMongoDB() *mongo.Client {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+
+	pwd := os.Getenv("MONGOP")
+
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017").
+		SetAuth(options.Credential{
+			AuthSource: "admin", Username: "toodle", Password: pwd,
+		})
+
 	client, err := mongo.Connect(context.Background(), clientOptions)
 
 	if err != nil {

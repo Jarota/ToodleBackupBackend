@@ -43,7 +43,7 @@ func main() {
 
 	app.Get("/api/randomString", handlers.RandomString)
 
-	err := app.Listen(":8080")
+	err := app.Listen(":80")
 
 	if err != nil {
 		fmt.Println(err)
