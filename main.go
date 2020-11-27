@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -43,11 +45,19 @@ func main() {
 
 	app.Get("/api/randomString", handlers.RandomString)
 
-	err := app.Listen(":80")
-
+	cert, err := tls.LoadX509KeyPair("certs/server.crt", "certs/server.key")
+	// 	"/etc/letsencrypt/live/toodlebackup.com/cert.pem",
+	// 	"/etc/letsencrypt/live/toodlebackup.com/privkey.pem",
+	// )
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
+
+	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+
+	ln, err := tls.Listen("tcp", ":8080", config)
+
+	log.Fatal(app.Listener(ln))
 
 	// err := db.Client.Disconnect(context.TODO())
 
@@ -55,6 +65,5 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	// fmt.Println("Disconnected from MongoDB")
-	fmt.Println("Fin")
 
 }

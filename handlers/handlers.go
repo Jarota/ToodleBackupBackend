@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -24,6 +25,10 @@ import (
 type credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type code struct {
+	Value string `json:"value"`
 }
 
 const (
@@ -209,10 +214,11 @@ func GetUser(c *fiber.Ctx) error {
 // ConnToodledo handler for putting access token in the db
 func ConnToodledo(c *fiber.Ctx) error {
 
-	var code string
+	var code code
 	json.Unmarshal([]byte(c.Body()), &code)
+	fmt.Println(code.Value)
 
-	toodleInfo, err := toodledo.GetToodledoTokens(code)
+	toodleInfo, err := toodledo.GetToodledoTokens(code.Value)
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
