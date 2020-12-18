@@ -28,6 +28,7 @@ func main() {
 
 	app.Static("/", "./frontend")
 	app.Static("/toodleredirect", "./frontend")
+	app.Static("/dropboxredirect", "./frontend")
 
 	app.Post("/api/register", handlers.Register)
 	app.Post("/api/login", handlers.Login)
@@ -40,15 +41,15 @@ func main() {
 	app.Get("/api/getUser", handlers.GetUser)
 	app.Post("/api/logout", handlers.Logout)
 	app.Put("/api/connToodledo", handlers.ConnToodledo)
-	app.Put("/api/connCloudStorage", handlers.ConnCloudStorage)
+	app.Put("/api/connDropbox", handlers.ConnDropbox)
 	app.Put("/api/setBackupFrequency", handlers.SetBackupFrequency)
 
 	app.Get("/api/randomString", handlers.RandomString)
 
-	cert, err := tls.LoadX509KeyPair("certs/server.crt", "certs/server.key")
-	// 	"/etc/letsencrypt/live/toodlebackup.com/cert.pem",
-	// 	"/etc/letsencrypt/live/toodlebackup.com/privkey.pem",
-	// )
+	cert, err := tls.LoadX509KeyPair( //"certs/server.crt", "certs/server.key")
+		"/etc/letsencrypt/live/toodlebackup.com/cert.pem",
+		"/etc/letsencrypt/live/toodlebackup.com/privkey.pem",
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
