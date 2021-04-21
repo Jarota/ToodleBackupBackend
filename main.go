@@ -46,10 +46,10 @@ func main() {
 
 	app.Get("/api/randomString", handlers.RandomString)
 
-	cert, err := tls.LoadX509KeyPair( //"certs/server.crt", "certs/server.key")
-		"/etc/letsencrypt/live/toodlebackup.com/cert.pem",
-		"/etc/letsencrypt/live/toodlebackup.com/privkey.pem",
-	)
+	cert, err := tls.LoadX509KeyPair("./certs/server.crt", "./certs/server.key")
+	// 	"/etc/letsencrypt/live/toodlebackup.com/cert.pem",
+	// 	"/etc/letsencrypt/live/toodlebackup.com/privkey.pem",
+	// )
 	if err != nil {
 		log.Fatal(err)
 	}

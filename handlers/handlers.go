@@ -17,6 +17,7 @@ import (
 
 	"github.com/jarota/ToodleBackupBackend/auth"
 	"github.com/jarota/ToodleBackupBackend/db"
+	"github.com/jarota/ToodleBackupBackend/dropbox"
 	"github.com/jarota/ToodleBackupBackend/random"
 	"github.com/jarota/ToodleBackupBackend/toodledo"
 	"github.com/jarota/ToodleBackupBackend/user"
@@ -251,16 +252,23 @@ func ConnToodledo(c *fiber.Ctx) error {
 	return nil
 }
 
-// ConnCloudStorage handler for putting access token in the db
-func ConnCloudStorage(c *fiber.Ctx) error {
+// ConnDropbox handler for putting access token in the db
+func ConnDropbox(c *fiber.Ctx) error {
 
-	var cloud user.Cloud
-	json.Unmarshal([]byte(c.Body()), &cloud)
+	var code code
+	json.Unmarshal([]byte(c.Body()), &code)
+
+	dropboxInfo, err := dropbox.GetDropboxTokens(code.Value)
+
+	if err != nil {
+		c.SendStatus(401)
+		return err
+	}
 
 	userCollection, err := db.GetCollection(client, dbName, users)
 
 	if err != nil {
-		c.SendStatus(fiber.StatusInternalServerError)
+		c.SendStatus(402)
 		return err
 	}
 
@@ -268,14 +276,14 @@ func ConnCloudStorage(c *fiber.Ctx) error {
 	filter := bson.D{{Key: "username", Value: name}}
 	update := bson.D{
 		{Key: "$push", Value: bson.D{
-			{Key: "clouds", Value: cloud},
+			{Key: "clouds", Value: dropboxInfo},
 		}},
 	}
 
 	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
 
 	if err != nil {
-		c.SendStatus(fiber.StatusInternalServerError)
+		c.SendStatus(403)
 		return err
 	}
 

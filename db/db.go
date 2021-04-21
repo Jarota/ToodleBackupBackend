@@ -11,13 +11,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// ErrNotConnectedToMongoDB - Error to throw when not connected to mongodb
 var ErrNotConnectedToMongoDB = errors.New("Error: Not connected to MongoDB")
 
+// ConnectToMongoDB - function for connecting to mongodb
 func ConnectToMongoDB() *mongo.Client {
 
-	pwd := os.Getenv("MONGOP")
+	pwd := os.Getenv("MONGOPASS")
 
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017").
+	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017").
 		SetAuth(options.Credential{
 			AuthSource: "admin", Username: "toodle", Password: pwd,
 		})
@@ -38,6 +40,7 @@ func ConnectToMongoDB() *mongo.Client {
 	return client
 }
 
+// GetCollection by name c
 func GetCollection(client *mongo.Client, db, c string) (*mongo.Collection, error) {
 
 	if client == nil {
