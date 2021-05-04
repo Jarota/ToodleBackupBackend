@@ -180,6 +180,11 @@ func BackupUserData(user *user.User) {
 
 	}
 
+	err = os.Remove(backupPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func contains(l []string, val string) bool {
