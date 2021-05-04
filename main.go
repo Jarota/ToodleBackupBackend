@@ -13,6 +13,7 @@ import (
 	jwtware "github.com/gofiber/jwt/v2"
 
 	"github.com/jarota/ToodleBackupBackend/handlers"
+	"github.com/jarota/ToodleBackupBackend/scheduler"
 )
 
 func main() {
@@ -43,6 +44,8 @@ func main() {
 	app.Put("/api/connToodledo", handlers.ConnToodledo)
 	app.Put("/api/connDropbox", handlers.ConnDropbox)
 	app.Put("/api/setBackupFrequency", handlers.SetBackupFrequency)
+	app.Put("/api/setBackupTime", handlers.SetBackupTime)
+	app.Get("/api/backupUser", handlers.BackupUser)
 
 	app.Get("/api/randomString", handlers.RandomString)
 
@@ -58,6 +61,10 @@ func main() {
 
 	ln, err := tls.Listen("tcp", ":8080", config)
 
+	// Spin up scheduler
+	go scheduler.PollForPendingBackups()
+
+	// Start webserver
 	log.Fatal(app.Listener(ln))
 
 	// err := db.Client.Disconnect(context.TODO())

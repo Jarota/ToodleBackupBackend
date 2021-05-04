@@ -19,6 +19,7 @@ import (
 	"github.com/jarota/ToodleBackupBackend/db"
 	"github.com/jarota/ToodleBackupBackend/dropbox"
 	"github.com/jarota/ToodleBackupBackend/random"
+	"github.com/jarota/ToodleBackupBackend/scheduler"
 	"github.com/jarota/ToodleBackupBackend/toodledo"
 	"github.com/jarota/ToodleBackupBackend/user"
 )
@@ -219,7 +220,7 @@ func ConnToodledo(c *fiber.Ctx) error {
 	json.Unmarshal([]byte(c.Body()), &code)
 	fmt.Println(code.Value)
 
-	toodleInfo, err := toodledo.GetToodledoTokens(code.Value)
+	toodleInfo, err := toodledo.GetToodledoTokens(code.Value, "authorization_code")
 
 	if err != nil {
 		c.SendStatus(fiber.StatusInternalServerError)
@@ -258,7 +259,7 @@ func ConnDropbox(c *fiber.Ctx) error {
 	var code code
 	json.Unmarshal([]byte(c.Body()), &code)
 
-	dropboxInfo, err := dropbox.GetDropboxTokens(code.Value)
+	_, dropboxInfo, err := dropbox.GetDropboxTokens(code.Value, "authorization_code")
 
 	if err != nil {
 		c.SendStatus(401)
@@ -320,6 +321,62 @@ func SetBackupFrequency(c *fiber.Ctx) error {
 	}
 
 	c.SendStatus(201) // Backup frequency successfully set
+	return nil
+}
+
+// SetBackupTime sets the backuptime for the authenticated user
+func SetBackupTime(c *fiber.Ctx) error {
+
+	var t user.BackupTime
+	json.Unmarshal([]byte(c.Body()), &t)
+
+	userCollection, err := db.GetCollection(client, dbName, users)
+	if err != nil {
+		c.SendStatus(fiber.StatusBadRequest)
+		return err
+	}
+
+	name := getAuthenticatedUsername(c)
+	filter := bson.D{{Key: "username", Value: name}}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "time", Value: t},
+		}},
+	}
+	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
+
+	if err != nil {
+		c.SendStatus(fiber.StatusInternalServerError)
+		return err
+	}
+
+	c.SendStatus(201) // Backup Time successfully set
+	return nil
+}
+
+// BackupUser is an explicit call to the backup function
+func BackupUser(c *fiber.Ctx) error {
+
+	userCollection, err := db.GetCollection(client, dbName, users)
+	if err != nil {
+		c.SendStatus(fiber.StatusBadRequest)
+		return err
+	}
+
+	name := getAuthenticatedUsername(c)
+	filter := bson.D{{Key: "username", Value: name}}
+
+	var u user.User
+	err = userCollection.FindOne(context.Background(), filter).Decode(&u)
+
+	if err != nil {
+		c.SendStatus(fiber.StatusInternalServerError)
+		return err
+	}
+
+	scheduler.BackupUserData(&u)
+
+	c.SendStatus(200) // User backup complete
 	return nil
 }
 

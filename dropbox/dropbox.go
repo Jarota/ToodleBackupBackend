@@ -3,7 +3,6 @@ package dropbox
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -29,7 +28,7 @@ type dropboxResponse struct {
 var ErrDummyError = errors.New("Error: this is a dummy error")
 
 // GetDropboxTokens gets access and refresh tokens from dropbox
-func GetDropboxTokens(code string) (*user.Cloud, error) {
+func GetDropboxTokens(code string, grantType string) (string, *user.Cloud, error) {
 
 	clientID := "n731o7jng2knpkq"
 	clientSecret := os.Getenv("DROPBOXSECRET")
@@ -39,9 +38,13 @@ func GetDropboxTokens(code string) (*user.Cloud, error) {
 	apiURL := "https://api.dropboxapi.com"
 	resource := "/oauth2/token"
 	data := url.Values{}
-	data.Set("grant_type", "authorization_code")
-	data.Set("code", code)
-	data.Set("redirect_uri", "https://localhost:8080/dropboxredirect")
+	data.Set("grant_type", grantType)
+	if grantType == "authorization_code" {
+		data.Set("redirect_uri", "https://localhost:8080/dropboxredirect")
+		data.Set("code", code)
+	} else if grantType == "refresh_token" {
+		data.Set("refresh_token", code)
+	}
 
 	u, _ := url.ParseRequestURI(apiURL)
 	u.Path = resource
@@ -57,24 +60,21 @@ func GetDropboxTokens(code string) (*user.Cloud, error) {
 	if err != nil || resp.StatusCode != 200 {
 		bytes, _ := ioutil.ReadAll(resp.Body)
 		log.Println(string(bytes))
-		return nil, errors.New("Request to connect dropbox failed :(")
+		return "", nil, errors.New("Request to connect dropbox failed :(")
 	}
 
 	defer resp.Body.Close()
 
-	fmt.Println(resp.Status)
-
 	bytes, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	fmt.Println(string(bytes))
 	var dropboxResp dropboxResponse
 	json.Unmarshal(bytes, &dropboxResp)
 
-	return responseToCloud(&dropboxResp), nil
+	return dropboxResp.AccessToken, responseToCloud(&dropboxResp), nil
 }
 
 func responseToCloud(resp *dropboxResponse) *user.Cloud {

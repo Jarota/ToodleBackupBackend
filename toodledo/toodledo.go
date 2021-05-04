@@ -22,7 +22,7 @@ type toodleResponse struct {
 }
 
 // GetToodledoTokens uses auth code to acquire an access and refresh token
-func GetToodledoTokens(code string) (*user.ToodleInfo, error) {
+func GetToodledoTokens(code string, grantType string) (*user.ToodleInfo, error) {
 
 	clientID := "toodlebackup"
 	secret := os.Getenv("TOODLEDOSECRET")
@@ -32,8 +32,12 @@ func GetToodledoTokens(code string) (*user.ToodleInfo, error) {
 	apiURL := "https://api.toodledo.com"
 	resource := "/3/account/token.php"
 	data := url.Values{}
-	data.Set("grant_type", "authorization_code")
-	data.Set("code", code)
+	data.Set("grant_type", grantType)
+	if grantType == "authorization_code" {
+		data.Set("code", code)
+	} else if grantType == "refresh_token" {
+		data.Set("refresh_token", code)
+	}
 
 	u, _ := url.ParseRequestURI(apiURL)
 	u.Path = resource
@@ -52,15 +56,12 @@ func GetToodledoTokens(code string) (*user.ToodleInfo, error) {
 
 	defer resp.Body.Close()
 
-	fmt.Println(resp.Status)
-
 	bytes, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(string(bytes))
 	var toodleResp toodleResponse
 	json.Unmarshal(bytes, &toodleResp)
 	// printResponse(&toodleResp)
