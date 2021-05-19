@@ -35,8 +35,6 @@ if __name__ == "__main__":
     path = sys.argv[1]
     token = sys.argv[2]
 
-    print(f"The path is {path} and the token is {token}")
-        
-    print("Uploading user data to dropbox...")
-    success = uploadToDropbox(path, token)
-    print("Done :)")
+    # print("Uploading user data to dropbox...")
+    uploadToDropbox(path, token)
+    # print("Done :)")

@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -49,7 +50,7 @@ func PollForPendingBackups() {
 				log.Fatal("Error decoding user for backup")
 			}
 
-			if len(u.Clouds) > 0 {
+			if len(u.Clouds) > 0 && len(u.Toodledo.ToBackup) > 0 {
 				go BackupUserData(&u)
 			}
 		}
@@ -93,68 +94,36 @@ func BackupUserData(user *user.User) {
 		log.Fatal(err)
 	}
 
-	/*
-		Next, check user's "Toodledo -> ToBackup" for "tasks"
-		If present, call the tasks/get.php endpoint with the access token
-		- include all optional fields and have "&f=xml"
-	*/
-	var taskData string
-	if contains(user.Toodledo.ToBackup, "tasks") {
-		client := &http.Client{}
-
-		apiURL := "https://api.toodledo.com"
-		resource := "/3/tasks/get.php"
-		u, _ := url.ParseRequestURI(apiURL)
-		u.Path = resource
-		urlStr := u.String()
-
-		req, _ := http.NewRequest(http.MethodGet, urlStr, nil)
-
-		params := req.URL.Query()
-		params.Add("access_token", toodleInfo.Token)
-		params.Add("f", "xml")
-		params.Add("fields", taskFields)
-		req.URL.RawQuery = params.Encode()
-
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer resp.Body.Close()
-
-		bytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		taskData = string(bytes)
-		// log.Println(taskData)
-
-	}
-
-	// Next, check user's "Toodledo -> ToBackup" for "notes"
-
-	// If present, call the notes/get.php endpoint with the access token and have "&f=xml"
-
-	// Next, check user's "Toodledo -> ToBackup" for "outlines"
-
-	// If present, call the outlines/get.php endpoint with the access token and have "&f=xml"
-
-	// Next, check user's "Toodledo -> ToBackup" for "lists"
-
-	// If present, call the lists/get.php endpoint with the access token and have "&f=xml"
-
 	// Open a file with the current time as the name
-	backupPath := user.Username + "_" + time.Now().UTC().String()[:10] + ".xml"
+	backupPath := user.Username + " " + time.Now().UTC().String()[:19] + ".xml"
 	f, err := os.Create(backupPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 
-	// Write all of the user data to the file
-	f.WriteString(taskData)
+	now := time.Now().Unix()
+	var offset int64 = 0
+	n, err := f.WriteString(fmt.Sprintf("<xml>\n<title>Toodledo :: XML Backup</title>\n<link>http://www.toodledo.com/</link>\n<toodledoversion>20</toodledoversion>\n<description>Your Toodledo backup</description>\n<export_date>%v</export_date>\n", now))
+	if err != nil {
+		log.Fatal(err)
+	}
+	offset += int64(n)
+	for _, s := range user.Toodledo.ToBackup {
+		if s != "basic" {
+			endpoint := "/3/" + s + "/get.php"
+			data := append(retrieveFromToodledo(endpoint, toodleInfo.Token)[38:], []byte("\n")...) // Slice to skip <xml version> tag at beginning
+			n, err := f.WriteAt(data, offset)
+			if err != nil {
+				log.Fatal(err)
+			}
+			offset += int64(n)
+		}
+	}
+	_, err = f.WriteAt([]byte("</xml>"), offset)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Use the dropbox refresh token to retrieve an access token
 	var dbxToken string
@@ -194,4 +163,39 @@ func contains(l []string, val string) bool {
 		}
 	}
 	return false
+}
+
+func retrieveFromToodledo(endpoint string, token string) []byte {
+
+	client := &http.Client{}
+
+	apiURL := "https://api.toodledo.com"
+	resource := endpoint
+	u, _ := url.ParseRequestURI(apiURL)
+	u.Path = resource
+	urlStr := u.String()
+
+	req, _ := http.NewRequest(http.MethodGet, urlStr, nil)
+	params := req.URL.Query()
+	if endpoint == "/3/tasks/get.php" {
+		params.Add("fields", taskFields)
+	}
+	params.Add("access_token", token)
+	params.Add("f", "xml")
+	req.URL.RawQuery = params.Encode()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return bytes
+
 }

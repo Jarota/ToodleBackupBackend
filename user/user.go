@@ -38,7 +38,7 @@ type User struct {
 // New creates a new skeleton user from a username and password
 func New(name string, pass string) *User {
 	h, m, s := time.Now().UTC().Clock()
-	now := BackupTime{Hour: h, Minute: m, Second: s}
+	now := BackupTime{Hour: h, Minute: (m + 10), Second: s}
 	u := User{
 		Username:  name,
 		Password:  pass,
