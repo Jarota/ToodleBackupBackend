@@ -28,7 +28,7 @@ var client = db.ConnectToMongoDB()
 func PollForPendingBackups() {
 	for {
 		h, m, _ := time.Now().UTC().Clock()
-		log.Printf("Polling database at %d:%d...", h, m)
+		// log.Printf("Polling database at %d:%d...", h, m)
 
 		userCollection, err := db.GetCollection(client, "ToodleBackup", "Users")
 		if err != nil {

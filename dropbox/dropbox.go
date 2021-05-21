@@ -40,7 +40,7 @@ func GetDropboxTokens(code string, grantType string) (string, *user.Cloud, error
 	data := url.Values{}
 	data.Set("grant_type", grantType)
 	if grantType == "authorization_code" {
-		data.Set("redirect_uri", "https://localhost:8080/dropboxredirect")
+		data.Set("redirect_uri", "https://toodlebackup.com/dropboxredirect")
 		data.Set("code", code)
 	} else if grantType == "refresh_token" {
 		data.Set("refresh_token", code)

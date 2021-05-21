@@ -59,7 +59,7 @@ func main() {
 
 	config := &tls.Config{Certificates: []tls.Certificate{cert}}
 
-	ln, err := tls.Listen("tcp", ":8080", config)
+	ln, err := tls.Listen("tcp", ":443", config)
 
 	// Spin up scheduler
 	go scheduler.PollForPendingBackups()
