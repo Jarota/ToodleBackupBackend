@@ -20,7 +20,7 @@ def uploadToDropbox(path: str, token: str) -> None:
             with open(path, "rb") as f:
                 try:
                     # Try to uplaod user's data
-                    dbxPath = "/Apps/ToodleBackup/" + path
+                    dbxPath = path
                     dbx.files_upload(f.read(), dbxPath, mode=WriteMode("overwrite"))
 
                 except AuthError:

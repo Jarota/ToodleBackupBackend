@@ -16,34 +16,33 @@ import (
 	"github.com/jarota/ToodleBackupBackend/toodledo"
 	"github.com/jarota/ToodleBackupBackend/user"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
 	taskFields = "folder, context, goal, location, tag, startdate, duedate, duedatemod, starttime, duetime, remind, repeat, status, star, priority, length, timer, added, note, parent, children, order, meta, previous, attachment, shared, addedby, via, attachments"
 )
 
-var client = db.ConnectToMongoDB()
-
 // PollForPendingBackups continuously pings mongodb for users to backup
-func PollForPendingBackups() {
+func PollForPendingBackups(ctx context.Context, dbc *mongo.Client) {
 	for {
 		h, m, _ := time.Now().UTC().Clock()
 		// log.Printf("Polling database at %d:%d...", h, m)
 
-		userCollection, err := db.GetCollection(client, "ToodleBackup", "Users")
+		userCollection, err := db.GetCollection(dbc, "ToodleBackup", "Users")
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		filter := bson.D{{Key: "time.hour", Value: h}, {Key: "time.minute", Value: m}}
 
-		cursor, err := userCollection.Find(context.Background(), filter)
+		cursor, err := userCollection.Find(ctx, filter)
 		if err != nil {
 			log.Fatal("Error polling database for users to backup")
 		}
-		defer cursor.Close(context.Background())
+		defer cursor.Close(ctx)
 
-		for cursor.Next(context.Background()) {
+		for cursor.Next(ctx) {
 			var u user.User
 			err := cursor.Decode(&u)
 			if err != nil {
@@ -51,7 +50,7 @@ func PollForPendingBackups() {
 			}
 
 			if len(u.Clouds) > 0 && len(u.Toodledo.ToBackup) > 0 {
-				go BackupUserData(&u)
+				go BackupUserData(ctx, dbc, &u)
 			}
 		}
 		if err := cursor.Err(); err != nil {
@@ -65,7 +64,7 @@ func PollForPendingBackups() {
 }
 
 // BackupUserData backs up the user's data
-func BackupUserData(user *user.User) {
+func BackupUserData(ctx context.Context, dbc *mongo.Client, user *user.User) {
 	log.Printf("Backing up the user:  %s\n", user.Username)
 
 	// First refresh toodledo access token
@@ -75,7 +74,7 @@ func BackupUserData(user *user.User) {
 		log.Fatal(err)
 	}
 
-	userCollection, err := db.GetCollection(client, "ToodleBackup", "Users")
+	userCollection, err := db.GetCollection(dbc, "ToodleBackup", "Users")
 
 	if err != nil {
 		log.Fatal(err)
@@ -88,7 +87,7 @@ func BackupUserData(user *user.User) {
 		}},
 	}
 
-	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
+	_, err = userCollection.UpdateOne(ctx, filter, update)
 
 	if err != nil {
 		log.Fatal(err)
@@ -156,23 +155,13 @@ func BackupUserData(user *user.User) {
 
 }
 
-func contains(l []string, val string) bool {
-	for _, v := range l {
-		if v == val {
-			return true
-		}
-	}
-	return false
-}
-
 func retrieveFromToodledo(endpoint string, token string) []byte {
 
 	client := &http.Client{}
 
 	apiURL := "https://api.toodledo.com"
-	resource := endpoint
 	u, _ := url.ParseRequestURI(apiURL)
-	u.Path = resource
+	u.Path = endpoint
 	urlStr := u.String()
 
 	req, _ := http.NewRequest(http.MethodGet, urlStr, nil)

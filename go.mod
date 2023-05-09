@@ -1,18 +1,18 @@
 module github.com/jarota/ToodleBackupBackend
 
-go 1.15
+go 1.16
 
 require (
-	github.com/andybalholm/brotli v1.0.1 // indirect
-	github.com/aws/aws-sdk-go v1.35.26 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/gofiber/fiber/v2 v2.1.4
-	github.com/gofiber/jwt/v2 v2.0.1
-	github.com/golang/snappy v0.0.2 // indirect
-	github.com/klauspost/compress v1.11.2 // indirect
-	go.mongodb.org/mongo-driver v1.4.3
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
-	golang.org/x/sys v0.0.0-20201112073958-5cba982894dd // indirect
-	golang.org/x/text v0.3.4 // indirect
+	github.com/gofiber/fiber/v2 v2.36.0
+	github.com/gofiber/jwt/v3 v3.2.14
+	github.com/golang-jwt/jwt/v4 v4.4.2
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
+	github.com/montanaflynn/stats v0.6.6 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
+	go.mongodb.org/mongo-driver v1.10.1
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 )

@@ -6,30 +6,33 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/argon2"
 )
 
 var (
-	ErrInvalidHash 			= errors.New("The encoded hash is not in the correct format")
-	ErrIncompatibleVersion	= errors.New("Incompatible version of argon2")
+	ErrInvalidHash         = errors.New("incorrect hash format")
+	ErrIncompatibleVersion = errors.New("incompatible version of argon2")
 )
 
 type argonParams struct {
-	memory		uint32
-	iterations	uint32
+	memory      uint32
+	iterations  uint32
 	parallelism uint8
-	saltLength	uint32
-	keyLength	uint32
+	saltLength  uint32
+	keyLength   uint32
 }
 
 var p *argonParams = &argonParams{
-	memory: 		64 * 1024,
-	iterations: 	3,
-	parallelism: 	2,
-	saltLength:		16,
-	keyLength:		32,
+	memory:      64 * 1024,
+	iterations:  3,
+	parallelism: 2,
+	saltLength:  16,
+	keyLength:   32,
 }
 
 func HashPassword(password string) (encodedHash string, err error) {
@@ -100,5 +103,18 @@ func decodeHash(encodedHash string) (salt, hash []byte, err error) {
 	}
 
 	return salt, hash, nil
-	
+}
+
+func CreateJWT(user string) (string, error) {
+	// Create the Claims
+	claims := jwt.MapClaims{
+		"name": user,
+		"exp":  time.Now().Add(time.Hour * 24).Unix(),
+	}
+
+	// Create token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and return
+	return token.SignedString([]byte(os.Getenv("SECRET")))
 }

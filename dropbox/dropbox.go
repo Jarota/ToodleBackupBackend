@@ -24,9 +24,6 @@ type dropboxResponse struct {
 	UID          string `json:"uid"`
 }
 
-// ErrDummyError - Error to throw for testing
-var ErrDummyError = errors.New("Error: this is a dummy error")
-
 // GetDropboxTokens gets access and refresh tokens from dropbox
 func GetDropboxTokens(code string, grantType string) (string, *user.Cloud, error) {
 
@@ -60,7 +57,7 @@ func GetDropboxTokens(code string, grantType string) (string, *user.Cloud, error
 	if err != nil || resp.StatusCode != 200 {
 		bytes, _ := ioutil.ReadAll(resp.Body)
 		log.Println(string(bytes))
-		return "", nil, errors.New("Request to connect dropbox failed :(")
+		return "", nil, errors.New("request to connect dropbox failed")
 	}
 
 	defer resp.Body.Close()

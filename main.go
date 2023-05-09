@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -10,14 +11,18 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
-	jwtware "github.com/gofiber/jwt/v2"
+	jwtware "github.com/gofiber/jwt/v3"
 
+	"github.com/jarota/ToodleBackupBackend/db"
 	"github.com/jarota/ToodleBackupBackend/handlers"
 	"github.com/jarota/ToodleBackupBackend/scheduler"
 )
 
 func main() {
 	fmt.Println("Starting Toodle Backup Backend...")
+	ctx := context.Background()
+	dbc := db.ConnectToMongoDB(ctx)
+	defer dbc.Disconnect(ctx)
 
 	app := fiber.New()
 
@@ -31,28 +36,28 @@ func main() {
 	app.Static("/toodleredirect", "./frontend")
 	app.Static("/dropboxredirect", "./frontend")
 
-	app.Post("/api/register", handlers.Register)
-	app.Post("/api/login", handlers.Login)
+	app.Post("/api/register", handlers.Register(dbc))
+	app.Post("/api/login", handlers.Login(dbc))
 
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey: []byte(os.Getenv("SECRET")),
 		ContextKey: "userInfo",
 	}))
 
-	app.Get("/api/getUser", handlers.GetUser)
-	app.Post("/api/logout", handlers.Logout)
-	app.Put("/api/connToodledo", handlers.ConnToodledo)
-	app.Put("/api/connDropbox", handlers.ConnDropbox)
-	app.Put("/api/setBackupFrequency", handlers.SetBackupFrequency)
-	app.Put("/api/setBackupTime", handlers.SetBackupTime)
-	app.Get("/api/backupUser", handlers.BackupUser)
+	app.Get("/api/getUser", handlers.GetUser(dbc))
+	app.Post("/api/logout", handlers.Logout(dbc))
+	app.Put("/api/connToodledo", handlers.ConnToodledo(dbc))
+	app.Put("/api/connDropbox", handlers.ConnDropbox(dbc))
+	app.Put("/api/setBackupFrequency", handlers.SetBackupFrequency(dbc))
+	app.Put("/api/setBackupTime", handlers.SetBackupTime(dbc))
+	app.Get("/api/backupUser", handlers.BackupUser(dbc))
 
-	app.Get("/api/randomString", handlers.RandomString)
+	app.Get("/api/randomString", handlers.RandomString(dbc))
 
-	cert, err := tls.LoadX509KeyPair( // "./certs/server.crt", "./certs/server.key")
-		"/etc/letsencrypt/live/toodlebackup.com/cert.pem",
-		"/etc/letsencrypt/live/toodlebackup.com/privkey.pem",
-	)
+	cert, err := tls.LoadX509KeyPair("./certs/server.crt", "./certs/server.key")
+	// 	"/etc/letsencrypt/live/toodlebackup.com/cert.pem",
+	// 	"/etc/letsencrypt/live/toodlebackup.com/privkey.pem",
+	// )
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,18 +65,13 @@ func main() {
 	config := &tls.Config{Certificates: []tls.Certificate{cert}}
 
 	ln, err := tls.Listen("tcp", ":443", config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Spin up scheduler
-	go scheduler.PollForPendingBackups()
+	go scheduler.PollForPendingBackups(ctx, dbc)
 
 	// Start webserver
 	log.Fatal(app.Listener(ln))
-
-	// err := db.Client.Disconnect(context.TODO())
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("Disconnected from MongoDB")
-
 }
